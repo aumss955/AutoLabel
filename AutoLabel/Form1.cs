@@ -24,15 +24,19 @@ namespace AutoLabel
         public Form1()
         {
             InitializeComponent();
-           // button2.Enabled = false;
+            button2.Enabled = false;
         }
 
         private string sSN,sRev,sPN;
+        private string printerPath;
 
         private void button1_Click(object sender, EventArgs e)
         {
+         
             string sPort = comboBox1.SelectedItem.ToString();
+       
 
+            
             if (textBox3.Text != "" || textBox4.Text != "")
             {
                 
@@ -105,18 +109,20 @@ namespace AutoLabel
             xmlString = xmlString.Replace("{{REV}}", sRev);
             xmlString = xmlString.Replace("{{PN}}", sPN);
             xmlString = xmlString.Replace("{{SN}}", sSN);
-
+            xmlString = xmlString.Replace("{{PRINTER}}", tbIP.Text);
 
             Invoke((MethodInvoker)delegate () {
                 textBox2.AppendText("==> Write File to Result folder" + Environment.NewLine);
                 
-
             });
 
             File.WriteAllText(Path.Combine("Result\\","TEST.xml"), xmlString);
 
+            Invoke((MethodInvoker)delegate () {
+                button2.Enabled = true;
 
-         
+            });
+
             // xm.LoadXml(xmlString);
 
             //XML.WriteToXmlFile("TEST.xml", xm,true);
@@ -145,17 +151,27 @@ namespace AutoLabel
             string sourceFile = Path.Combine("Result\\", "TEST.xml");
             string backupFile = Path.Combine("Backup\\", "TEST.xml");
             string destFile = @"D:\AUM.xml";
+            printerPath = Path.Combine(tbPath.Text,"test.xml");
 
             if (tbIP.Text != "")
             {
                 checkCON = checkConThread(tbIP.Text);
                 if(checkCON == true)
                 {
-                    textBox2.AppendText("==> Writing File to "+ destFile + Environment.NewLine);
-                    System.IO.File.Copy(sourceFile, destFile,true);
-                    textBox2.AppendText("==> Finished writing" + Environment.NewLine);
-                    System.IO.File.Copy(sourceFile, backupFile, true);
-                    System.IO.File.Delete(sourceFile);
+                    try
+                    {
+                        textBox2.AppendText("==> Writing File to " + printerPath + Environment.NewLine);
+                        System.IO.File.Copy(sourceFile, printerPath, true);
+                        textBox2.AppendText("==> Finished writing" + Environment.NewLine);
+                        System.IO.File.Copy(sourceFile, backupFile, true);
+                        System.IO.File.Delete(sourceFile);
+                        button2.Enabled = false;
+                    }
+                    catch (ArgumentNullException ex)
+                    {
+                        textBox2.AppendText("==> Error writing" + Environment.NewLine);
+                        MessageBox.Show("Please input directory path");
+                    }
                 }
                 else
                 {
@@ -166,6 +182,27 @@ namespace AutoLabel
             else
             {
                 MessageBox.Show("Please input printer IP!!!");
+            }
+        }
+
+        private void textBox1_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            using (var fbd = new FolderBrowserDialog())
+            {
+                DialogResult result = fbd.ShowDialog();
+
+                if (result == DialogResult.OK && !string.IsNullOrWhiteSpace(fbd.SelectedPath))
+                {
+                    //string[] files = Directory.GetFiles(fbd.SelectedPath);
+                    tbPath.Text = fbd.SelectedPath;
+
+                    //System.Windows.Forms.MessageBox.Show("Files found: " + files.Length.ToString(), "Message");
+                }
             }
         }
 
