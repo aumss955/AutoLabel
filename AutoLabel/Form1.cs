@@ -29,18 +29,38 @@ namespace AutoLabel
 
         private string sSN,sRev,sPN;
         private string printerPath;
+        private string sScanLabel;
+
+        public string SScanLabel
+        {
+            get
+            {
+                return sScanLabel;
+            }
+
+            set
+            {
+                sScanLabel = value;
+            }
+        }
 
         private void button1_Click(object sender, EventArgs e)
         {
-         
+
+            lbStatus.Text = "Status";
+            lbStatus.BackColor = Color.White;
+
             string sPort = comboBox1.SelectedItem.ToString();
        
 
             
             if (textBox3.Text != "" || textBox4.Text != "")
             {
-                
+                ScanLabel scan = new ScanLabel(this);
 
+                scan.ShowDialog();
+
+                textBox5.Text = sScanLabel;
                 textBox1.Text = "";
                 //textBox2.Text = "";
 
@@ -52,14 +72,13 @@ namespace AutoLabel
 
 
                 // Subscripber B, this form  
-                //dataProcessor.DataProcessing += this.OnDataProcessed;
-                //dataProcessor.DataProcessing += this.OnDataProcessing;
                 dataProcessor.DataProcessing += this.OnDataProcessing;
                 dataProcessor.DataProcessed += this.OnDataProcessed;
 
                 // Start process the data  
                 dataProcessor.Process(dataStorage);
 
+                
 
             }
             else
@@ -83,51 +102,102 @@ namespace AutoLabel
         {
             string dataRecive = args.EvDataStorage.Data;
             string xmlString = System.IO.File.ReadAllText("C:\\Users\\AumHey\\Desktop\\XML_format.xml");
-            sRev = textBox3.Text;
-            sPN = textBox4.Text;
 
-            XmlDocument xm = new XmlDocument();
+            Console.WriteLine(dataRecive.Length);
 
-            Invoke((MethodInvoker)delegate () {
-                textBox2.AppendText(args.EvDataStorage.Data + Environment.NewLine);
-            });
-
-
-            Regex regex = new Regex(@"[A-Z]\d+");
-            Match match = regex.Match(dataRecive);
-            if (match.Success)
+            if (dataRecive.Length > 90)
             {
-                Console.WriteLine("MATCH VALUE: " + match.Value);
-                sSN = match.Value;
+                sRev = textBox3.Text;
+                sPN = textBox4.Text;
+
+                XmlDocument xm = new XmlDocument();
+
+                Invoke((MethodInvoker)delegate ()
+                {
+                    textBox2.AppendText(args.EvDataStorage.Data + Environment.NewLine);
+                });
+
+
+                Regex regex = new Regex(@"[A-Z]\d+");
+                Match match = regex.Match(dataRecive);
+                if (match.Success)
+                {
+                    Console.WriteLine("MATCH VALUE: " + match.Value);
+                    sSN = match.Value;
+
+
+                    Invoke((MethodInvoker)delegate ()
+                    {
+                        textBox1.Text = sSN;
+
+                    });
+
+                    xmlString = xmlString.Replace("{{REV}}", sRev);
+                    xmlString = xmlString.Replace("{{PN}}", sPN);
+                    xmlString = xmlString.Replace("{{SN}}", sSN);
+                    xmlString = xmlString.Replace("{{PRINTER}}", tbIP.Text);
+
+                    Invoke((MethodInvoker)delegate ()
+                    {
+                        textBox2.AppendText("==> Write File to Result folder" + Environment.NewLine);
+
+                    });
+
+                    File.WriteAllText(Path.Combine("Result\\", "TEST.xml"), xmlString);
+
+
+
+
+             
+
+
+                    if (sSN == SScanLabel)
+                    {
+
+
+                        Invoke((MethodInvoker)delegate ()
+                        {
+                            textBox2.AppendText("==> Match Found !!! HWID กับ Label S/N เหมือนกัน ไม่จำเป็นต้องปิ้นใหม่" + Environment.NewLine);
+                            lbStatus.Text = "ไม่จำเป็นต้องปริ้น Label ใหม่";
+                            lbStatus.BackColor = Color.GreenYellow;
+
+                        });
+                    }
+                    else
+                    {
+                        Invoke((MethodInvoker)delegate ()
+                        {
+                            textBox2.AppendText("==> HWID and Scanlabel S/N are not match. จำเป็นต้องปิ้น Label ใหม่" + Environment.NewLine);
+                            lbStatus.Text = "ปริ้น Label ใหม่";
+                            lbStatus.BackColor = Color.Red;
+                            button2.Enabled = true;
+                        });
+                    }
+                }
+                else
+                {
+                    Invoke((MethodInvoker)delegate ()
+                    {
+                        textBox2.AppendText("==> Error กรูณา insert ตัวงานอีกครั้ง"+Environment.NewLine);
+                      
+                    });
+
+                }
+
+                // xm.LoadXml(xmlString);
+
+                //XML.WriteToXmlFile("TEST.xml", xm,true);
+                //.WriteAllText("C:\\Test.xml", xmlString);
             }
+            else
+            {
+                Invoke((MethodInvoker)delegate ()
+                {
+                    textBox2.AppendText("==> Error กรูณา insert ตัวงานอีกครั้ง" + Environment.NewLine);
 
-            Invoke((MethodInvoker)delegate () {
-                textBox1.Text = sSN;
+                });
 
-            });
-
-            xmlString = xmlString.Replace("{{REV}}", sRev);
-            xmlString = xmlString.Replace("{{PN}}", sPN);
-            xmlString = xmlString.Replace("{{SN}}", sSN);
-            xmlString = xmlString.Replace("{{PRINTER}}", tbIP.Text);
-
-            Invoke((MethodInvoker)delegate () {
-                textBox2.AppendText("==> Write File to Result folder" + Environment.NewLine);
-                
-            });
-
-            File.WriteAllText(Path.Combine("Result\\","TEST.xml"), xmlString);
-
-            Invoke((MethodInvoker)delegate () {
-                button2.Enabled = true;
-
-            });
-
-            // xm.LoadXml(xmlString);
-
-            //XML.WriteToXmlFile("TEST.xml", xm,true);
-            //.WriteAllText("C:\\Test.xml", xmlString);
-
+            }
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -151,9 +221,9 @@ namespace AutoLabel
             string sourceFile = Path.Combine("Result\\", "TEST.xml");
             string backupFile = Path.Combine("Backup\\", "TEST.xml");
             string destFile = @"D:\AUM.xml";
-            printerPath = Path.Combine(tbPath.Text,"test.xml");
+            printerPath = Path.Combine(tbPath.Text);
 
-            if (tbIP.Text != "")
+            if (tbIP.Text != "" || tbPath.Text != "")
             {
                 checkCON = checkConThread(tbIP.Text);
                 if(checkCON == true)
@@ -181,7 +251,7 @@ namespace AutoLabel
             }
             else
             {
-                MessageBox.Show("Please input printer IP!!!");
+                MessageBox.Show("Please input printer IP or path!!!");
             }
         }
 
@@ -199,7 +269,8 @@ namespace AutoLabel
                 if (result == DialogResult.OK && !string.IsNullOrWhiteSpace(fbd.SelectedPath))
                 {
                     //string[] files = Directory.GetFiles(fbd.SelectedPath);
-                    tbPath.Text = fbd.SelectedPath;
+                    tbPath.Text = fbd.SelectedPath + "\\test.xml";
+                    
 
                     //System.Windows.Forms.MessageBox.Show("Files found: " + files.Length.ToString(), "Message");
                 }
