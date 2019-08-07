@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -21,6 +22,7 @@ namespace AutoLabel
         // Variable  
         //private DataStorage dataStorage;
         private ProcEventArgs procEventArgs;
+        private string sSN;
 
         public void Process(DataStorage ds)
         {
@@ -59,6 +61,7 @@ namespace AutoLabel
 
         private void DoWork()
         {
+            //StringBuilder returnData = new StringBuilder();
             string returnData = "";
             Console.WriteLine("The thread #" +
                     Thread.CurrentThread.ManagedThreadId + " is started");
@@ -66,13 +69,29 @@ namespace AutoLabel
             cp.Open(sPort);
 
             
-            cp.SendData("hwid read_manuf");
+            //cp.SendData("hwid read_manuf");
 
-            while(returnData == string.Empty)
+
+
+            while (true)
             {
+                cp.SendData("hwid read_manuf");
+                //Thread.Sleep(5000);
                 returnData = cp.GetData();
-                Thread.Sleep(1000);
+                //returnData.Append(cp.GetData().ToString());
                 OnDataProcessing(procEventArgs);
+                Console.WriteLine(returnData);
+
+                Regex regex = new Regex(@"[A-Z]\d\d\d\d\d\d\d\d\d\d\d\d");
+
+                Match match = regex.Match(returnData.ToString());
+                if (match.Success)
+                {
+                    Console.WriteLine("MATCH VALUE: " + match.Value);
+                    sSN = match.Value;
+                    break;
+                }
+                
             }
 
            
@@ -94,7 +113,7 @@ namespace AutoLabel
 
 
             cp.Close();
-            procEventArgs.EvDataStorage.Data = returnData;
+            procEventArgs.EvDataStorage.Data = sSN;
             OnDataProcessed(procEventArgs);             // Fire the OnDataProcessed event  
         }
     }

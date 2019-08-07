@@ -9,5 +9,6 @@ namespace AutoLabel
     public class DataStorage
     {
         public string Data { set; get; }
+       // public StringBuilder Data;
     }
 }

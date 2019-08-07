@@ -27,9 +27,10 @@ namespace AutoLabel
             button2.Enabled = false;
         }
 
-        private string sSN,sRev,sPN;
+        private string sSN,sRev,sPN,sPrinterIP;
         private string printerPath;
         private string sScanLabel;
+        private string sPort;
 
         public string SScanLabel
         {
@@ -46,12 +47,13 @@ namespace AutoLabel
 
         private void button1_Click(object sender, EventArgs e)
         {
+            button2.Enabled = false;
 
             lbStatus.Text = "Status";
             lbStatus.BackColor = Color.White;
 
             string sPort = comboBox1.SelectedItem.ToString();
-       
+            this.sPort = sPort;
 
             
             if (textBox3.Text != "" || textBox4.Text != "")
@@ -64,7 +66,7 @@ namespace AutoLabel
                 textBox1.Text = "";
                 //textBox2.Text = "";
 
-                DataStorage dataStorage = new DataStorage() { Data = "test" };
+                DataStorage dataStorage = new DataStorage();
                 DataProcessor dataProcessor = new DataProcessor();
 
                 dataProcessor.sPort = sPort;
@@ -79,7 +81,7 @@ namespace AutoLabel
                 dataProcessor.Process(dataStorage);
 
                 
-
+               
             }
             else
             {
@@ -92,23 +94,30 @@ namespace AutoLabel
 
         private void OnDataProcessing(object sender, ProcEventArgs args)
         {
+           
             Invoke((MethodInvoker)(() =>
             {
-                textBox2.AppendText("TESTING \n");
+                //textBox2.AppendText("TESTING \n");
+                textBox2.Text = "TESTING";
             }));
         }
 
         private void OnDataProcessed(object sender, ProcEventArgs args)
         {
-            string dataRecive = args.EvDataStorage.Data;
-            string xmlString = System.IO.File.ReadAllText("C:\\Users\\AumHey\\Desktop\\XML_format.xml");
+            string dataRecive = args.EvDataStorage.Data.ToString();
+            string xmlPath = tbXMLformat.Text;
+            
+            string xmlString = System.IO.File.ReadAllText(xmlPath);
+       
 
-            Console.WriteLine(dataRecive.Length);
+            //Console.WriteLine(dataRecive.Length);
 
-            if (dataRecive.Length > 90)
+            //if (dataRecive.Length == 95)
+            if(dataRecive != null)
             {
                 sRev = textBox3.Text;
                 sPN = textBox4.Text;
+                sPrinterIP = tbIP.Text;
 
                 XmlDocument xm = new XmlDocument();
 
@@ -118,37 +127,36 @@ namespace AutoLabel
                 });
 
 
-                Regex regex = new Regex(@"[A-Z]\d+");
+                Regex regex = new Regex(@"[A-Z]\d\d\d\d\d\d\d\d\d\d\d\d");
                 Match match = regex.Match(dataRecive);
-                if (match.Success)
-                {
-                    Console.WriteLine("MATCH VALUE: " + match.Value);
-                    sSN = match.Value;
-
-
-                    Invoke((MethodInvoker)delegate ()
+                    if (match.Success)
                     {
-                        textBox1.Text = sSN;
-
-                    });
-
-                    xmlString = xmlString.Replace("{{REV}}", sRev);
-                    xmlString = xmlString.Replace("{{PN}}", sPN);
-                    xmlString = xmlString.Replace("{{SN}}", sSN);
-                    xmlString = xmlString.Replace("{{PRINTER}}", tbIP.Text);
-
-                    Invoke((MethodInvoker)delegate ()
-                    {
-                        textBox2.AppendText("==> Write File to Result folder" + Environment.NewLine);
-
-                    });
-
-                    File.WriteAllText(Path.Combine("Result\\", "TEST.xml"), xmlString);
+                        //Console.WriteLine("MATCH VALUE: " + match.Value);
+                        sSN = match.Value;
 
 
+                        Invoke((MethodInvoker)delegate ()
+                        {
+                            textBox1.Text = sSN;
+
+                        });
+
+                        xmlString = xmlString.Replace("{{REV}}", sRev);
+                        xmlString = xmlString.Replace("{{PN}}", sPN);
+                        xmlString = xmlString.Replace("{{SN}}", sSN);
+                        xmlString = xmlString.Replace("{{PRINTER}}", sPrinterIP);
+
+                        Invoke((MethodInvoker)delegate ()
+                        {
+                            textBox2.AppendText("==> Write File to Result folder" + Environment.NewLine);
+                            
+                        });
+
+                        File.WriteAllText(Path.Combine("Result\\", "TEST.xml"), xmlString);
 
 
-             
+
+                   
 
 
                     if (sSN == SScanLabel)
@@ -179,8 +187,23 @@ namespace AutoLabel
                     Invoke((MethodInvoker)delegate ()
                     {
                         textBox2.AppendText("==> Error กรูณา insert ตัวงานอีกครั้ง"+Environment.NewLine);
+                        
                       
                     });
+
+                    //DataStorage dataStorage = new DataStorage();
+                    //DataProcessor dataProcessor = new DataProcessor();
+
+                    //dataProcessor.sPort = sPort;
+                    //// Subscripber A, the SubscripberClass  
+
+
+                    //// Subscripber B, this form  
+                    //dataProcessor.DataProcessing += this.OnDataProcessing;
+                    //dataProcessor.DataProcessed += this.OnDataProcessed;
+
+                    //// Start process the data  
+                    //dataProcessor.Process(dataStorage);
 
                 }
 
@@ -188,6 +211,8 @@ namespace AutoLabel
 
                 //XML.WriteToXmlFile("TEST.xml", xm,true);
                 //.WriteAllText("C:\\Test.xml", xmlString);
+
+                
             }
             else
             {
@@ -196,6 +221,21 @@ namespace AutoLabel
                     textBox2.AppendText("==> Error กรูณา insert ตัวงานอีกครั้ง" + Environment.NewLine);
 
                 });
+
+                //DataStorage dataStorage = new DataStorage();
+                //DataProcessor dataProcessor = new DataProcessor();
+
+                //dataProcessor.sPort = sPort;
+                //// Subscripber A, the SubscripberClass  
+
+
+                //// Subscripber B, this form  
+                //dataProcessor.DataProcessing += this.OnDataProcessing;
+                //dataProcessor.DataProcessed += this.OnDataProcessed;
+
+                //// Start process the data  
+                //dataProcessor.Process(dataStorage);
+
 
             }
         }
@@ -219,7 +259,7 @@ namespace AutoLabel
         {
             bool checkCON;
             string sourceFile = Path.Combine("Result\\", "TEST.xml");
-            string backupFile = Path.Combine("Backup\\", "TEST.xml");
+            string backupFile = Path.Combine("Backup\\", this.textBox1.Text + ".xml");
             string destFile = @"D:\AUM.xml";
             printerPath = Path.Combine(tbPath.Text);
 
@@ -234,8 +274,8 @@ namespace AutoLabel
                         System.IO.File.Copy(sourceFile, printerPath, true);
                         textBox2.AppendText("==> Finished writing" + Environment.NewLine);
                         System.IO.File.Copy(sourceFile, backupFile, true);
-                        System.IO.File.Delete(sourceFile);
-                        button2.Enabled = false;
+                        //System.IO.File.Delete(sourceFile);
+                        //button2.Enabled = false;
                     }
                     catch (ArgumentNullException ex)
                     {
@@ -274,6 +314,32 @@ namespace AutoLabel
 
                     //System.Windows.Forms.MessageBox.Show("Files found: " + files.Length.ToString(), "Message");
                 }
+            }
+        }
+
+        private void btnXMLFormat_Click(object sender, EventArgs e)
+        {
+
+            OpenFileDialog openFileDialog1 = new OpenFileDialog
+            {
+                InitialDirectory = @"D:\",
+                Title = "Browse Text Files",
+
+                CheckFileExists = true,
+                CheckPathExists = true,
+
+                DefaultExt = "xml",
+                Filter = "XML files (*.xml)|*.xml",
+                FilterIndex = 2,
+                RestoreDirectory = true,
+
+                ReadOnlyChecked = false,
+                ShowReadOnly = false
+            };
+
+            if (openFileDialog1.ShowDialog() == DialogResult.OK)
+            {
+                tbXMLformat.Text = openFileDialog1.FileName;
             }
         }
 
